@@ -19,7 +19,7 @@ def enum_windows_proc(hwnd, lparam):
 
 
 if __name__ == '__main__':
-    proc = subprocess.Popen("WorkClock.exe", creationflags=subprocess.CREATE_NEW_CONSOLE)
+    proc = subprocess.Popen(r"wt C:\CountdownToWork.exe", creationflags=subprocess.CREATE_NEW_CONSOLE)
     time.sleep(2)
     pyautogui.hotkey("alt", "enter")
     time.sleep(2)

@@ -10,20 +10,25 @@ namespace CountdownToWork
         static int h;
         static ConsoleColor startColor;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:验证平台兼容性", Justification = "<挂起>")]
         static async Task Main(string[] args)
         {
             startColor = Console.ForegroundColor;
+
+            Console.WindowWidth = 150;
+            Console.WindowHeight = 40;
+
             w = Console.WindowWidth;
             h = Console.WindowHeight;
 
-            var type = int.Parse(args.Length > 0 ? args[0] : "0");
+            var option = GetOption(args);
+            var gulugulu = option.OffDutyTime;
 
-            DateTime gulugulu = DateTime.Parse(args.Length > 1 ? args[1] : "08:00:00");
             var now = DateTime.Now;
             var offDutyTime = new DateTime(now.Year, now.Month, now.Day, gulugulu.Hour, gulugulu.Minute, gulugulu.Second);
 
         start:
-
+            Console.Clear();
             while (true)
             {
                 if (w != Console.WindowWidth || h != Console.WindowHeight)
@@ -43,19 +48,36 @@ namespace CountdownToWork
                     offDutyTime = offDutyTime.AddDays(1);
                     goto start;
                 }
-
-                if (number < 0 && number > -0.5) { await OffDutyGoGoGo(); }
-                else { ShowNumberText(number, type); }
-
-                await Task.Delay(20);
+                else if (number < 0 && number > -0.5)
+                {
+                    await ShowOffDutyGoGoGo();
+                }
+                else
+                {
+                    await ShowNumberText(number, option.Type);
+                }
             }
         }
 
-        static void ShowNumberText(double number, int type)
+        static async Task ShowNumberText(double number, int type)
         {
             var numberArray = Number.DrawNumbuer(number.ToString("0.00000000"), Model.Init(type));
-            // 输出的内容宽高是固定的 56*7
-            var x = (Console.WindowWidth - 56) / 2;
+            // 输出的内容高是固定的 7
+            // 宽度会随着字符的改变改变
+
+            var widthReduction = type switch
+            {
+                1 => 92,
+                2 => 82,
+                3 => 62,
+                4 => 92,
+                5 => 82,
+                6 => 85,
+                _ => 56
+            };
+
+            var x = (Console.WindowWidth - widthReduction) / 2;
+            x = x < 0 ? 0 : x;
             var y = (Console.WindowHeight - 7) / 2 - 1;
 
             StringBuilder stringBuilder = new();
@@ -63,19 +85,20 @@ namespace CountdownToWork
                 stringBuilder.Append(Environment.NewLine);
 
             foreach (StringBuilder stringBuilder2 in numberArray)
-            {
                 stringBuilder.Append(new string(' ', x)).Append(stringBuilder2).Append(Environment.NewLine);
-            }
+
             Console.WriteLine(stringBuilder.ToString());
+
+            await Task.Delay(20);
         }
 
-        static async Task OffDutyGoGoGo()
+        static async Task ShowOffDutyGoGoGo()
         {
             Console.Clear();
 
             Random random = new Random();
 
-            var gogogo = 
+            var gogogo =
                 "   _____        _____        _____\r\n" +
                 "  / ____|      / ____|      / ____|      \r\n" +
                 " | |  __  ___ | |  __  ___ | |  __  ___  \r\n" +
@@ -118,20 +141,46 @@ namespace CountdownToWork
             }
         }
 
-        public static int GetLength(string str)
+        static Option GetOption(string[] args)
         {
-            if (string.IsNullOrWhiteSpace(str)) return 0;
-            var n = new ASCIIEncoding();
-            var b = n.GetBytes(str);
-            var length = 0;
-            for (var i = 0; i <= b.Length - 1; i++)
+            if (args.Length > 0)
             {
-                // 判断是否为汉字或全角符号
-                if (b[i] == 63) { length++; }
-                length++;
+                var type = int.Parse(args.Length > 0 ? args[0] : "0");
+                var gulugulu = DateTime.Parse(args.Length > 1 ? args[1] : "18:00:00");
+                return new()
+                {
+                    Type = type,
+                    OffDutyTime = gulugulu,
+                };
             }
-            return length;
+            else if (File.Exists("config.txt"))
+            {
+                var config = File.ReadAllText("config.txt");
+                args = config.Split(" ");
+                var type = int.Parse(args.Length > 0 ? args[0] : "0");
+                var gulugulu = DateTime.Parse(args.Length > 1 ? args[1] : "18:00:00");
+                return new()
+                {
+                    Type = type,
+                    OffDutyTime = gulugulu,
+                };
+            }
+            else
+            {
+                return new()
+                {
+                    Type = 0,
+                    OffDutyTime = DateTime.Parse("18:00:00")
+                };
+            }
         }
+    }
+
+    public class Option
+    {
+        public int Type { get; set; }
+
+        public DateTime OffDutyTime { get; set; }
     }
 
     public class Model
